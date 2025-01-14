@@ -16,7 +16,7 @@ namespace SecureWithOAuth.Controllers
             this.tokenService = tokenService;
         }
 
-        [HttpGet("[action]")]
+        [HttpPost("[action]")]
         public async Task<IActionResult> Login(LoginRequestDto payload)
         {
             PasswordHasher<IdentityUser> passwordHasher = new PasswordHasher<IdentityUser>();

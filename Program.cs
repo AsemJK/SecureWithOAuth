@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Scalar.AspNetCore;
 using SecureWithOAuth.Data;
 using SecureWithOAuth.Services;
+using SQLitePCL;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Batteries.Init();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -38,21 +40,37 @@ builder.Services.AddAuthentication(options =>
             ValidateAudience = false,
             ValidateLifetime = true
         };
-    });
-
+    }).AddBearerToken(IdentityConstants.BearerScheme);
+builder.Services.AddAuthorizationBuilder();
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "SecureWithOAuth", Version = "v1" });
+});
+builder.Services.AddControllers();
+
 var app = builder.Build();
+
+
+//apply migrations
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<ApplicationDbContext>();
+    //migrate if there are pending migrations
+    context.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference(options =>
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        options.WithTheme(ScalarTheme.Kepler)
-        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-        .WithTitle("Secured Api");
-    });
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "SecureWithOAuth v1");
+    }
+    );
 }
 
 app.UseHttpsRedirection();
@@ -76,6 +94,7 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast");
 
+app.MapControllers();
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
