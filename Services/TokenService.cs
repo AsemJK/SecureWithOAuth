@@ -31,7 +31,9 @@ namespace SecureWithOAuth.Services
                 SigningCredentials = new(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);//create token using token descriptor
+
             return tokenHandler.WriteToken(token);
         }
     }
